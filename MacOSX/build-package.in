@@ -26,6 +26,8 @@ P2="${OTHER_CODE_SIGN_FLAGS:+OTHER_CODE_SIGN_FLAGS=${OTHER_CODE_SIGN_FLAGS}}"
 P3="${CODE_SIGN_INJECT_BASE_ENTITLEMENTS:+CODE_SIGN_INJECT_BASE_ENTITLEMENTS=${CODE_SIGN_INJECT_BASE_ENTITLEMENTS}}"
 P4="${CODE_SIGN_STYLE:+CODE_SIGN_STYLE=${CODE_SIGN_STYLE}}"
 
+
+
 export SED=/usr/bin/sed
 PREFIX=/Library/OpenSC
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig
@@ -179,17 +181,64 @@ else
 	mkdir -p ${BUILDPATH}/target_token
 fi
 
+
+FILESBIN=${BUILDPATH}/target/Library/OpenSC/bin/*
+for f in $FILESBIN
+do
+  echo "Signing $f file..."
+  codesign --force --verify  --options runtime --verbose --sign "${CODE_SIGN_IDENTITY}" $f
+done
+
+
+FILESLIBSO=${BUILDPATH}/target/Library/OpenSC/lib/*.so
+for f in $FILESLIBSO
+do
+  echo "Signing $f file..."
+  codesign --force --verify --options runtime  --verbose --sign "${CODE_SIGN_IDENTITY}" $f
+done
+
+FILESLIBBUNDLE=${BUILDPATH}/target/Library/OpenSC/lib/*.bundle
+for f in $FILESLIBBUNDLE
+do
+  echo "Signing $f file..."
+  codesign --force --verify --options runtime  --verbose --sign "${CODE_SIGN_IDENTITY}" $f
+done
+
+FILESLIBDY=${BUILDPATH}/target/Library/OpenSC/lib/*.bundle
+for f in $FILESLIBDY
+do
+  echo "Signing $f file..."
+  codesign --force --verify  --options runtime --verbose --sign "${CODE_SIGN_IDENTITY}" $f
+done
+
+codesign --force --verify --options runtime  --verbose --sign "${CODE_SIGN_IDENTITY}" "${BUILDPATH}/target/Applications/OpenSC Notify.app"
+
 # Build package
-pkgbuild --root ${BUILDPATH}/target --scripts MacOSX/scripts --identifier org.opensc-project.mac --version @PACKAGE_VERSION@ --install-location / OpenSC.pkg
-pkgbuild --root ${BUILDPATH}/target_tokend --identifier org.opensc-project.tokend --version @PACKAGE_VERSION@ --install-location / OpenSC-tokend.pkg
-pkgbuild --root ${BUILDPATH}/target_token --identifier org.opensc-project.mac.opensctoken --version @PACKAGE_VERSION@ --install-location / OpenSCToken.pkg
-pkgbuild --root ${BUILDPATH}/target_startup --identifier org.opensc-project.startup --version @PACKAGE_VERSION@ --install-location / OpenSC-startup.pkg
+pkgbuild --root ${BUILDPATH}/target --scripts MacOSX/scripts --identifier org.opensc-project.mac --version @PACKAGE_VERSION@ --install-location / OpenSC_unsigned.pkg
+productsign --timestamp --sign "${CODE_SIGN_IDENTITY_INSTALLER}" ${BUILDPATH}/OpenSC_unsigned.pkg ${BUILDPATH}/OpenSC.pkg
+rm OpenSC_unsigned.pkg
+
+pkgbuild --root ${BUILDPATH}/target_tokend --identifier org.opensc-project.tokend --version @PACKAGE_VERSION@ --install-location / OpenSC-tokend_unsigned.pkg
+productsign --timestamp --sign "${CODE_SIGN_IDENTITY_INSTALLER}" ${BUILDPATH}/OpenSC-tokend_unsigned.pkg ${BUILDPATH}/OpenSC-tokend.pkg
+rm OpenSC-tokend_unsigned.pkg
+
+pkgbuild --root ${BUILDPATH}/target_token --identifier org.opensc-project.mac.opensctoken --version @PACKAGE_VERSION@ --install-location / OpenSCToken_unsigned.pkg
+productsign --timestamp --sign "${CODE_SIGN_IDENTITY_INSTALLER}" ${BUILDPATH}/OpenSCToken_unsigned.pkg ${BUILDPATH}/OpenSCToken.pkg
+rm OpenSCToken_unsigned.pkg
+
+pkgbuild --root ${BUILDPATH}/target_startup --identifier org.opensc-project.startup --version @PACKAGE_VERSION@ --install-location / OpenSC-startup_unsigned.pkg
+productsign --timestamp --sign "${CODE_SIGN_IDENTITY_INSTALLER}" ${BUILDPATH}/OpenSC-startup_unsigned.pkg ${BUILDPATH}/OpenSC-startup.pkg
+rm OpenSC-startup_unsigned.pkg
 
 # Build product
-productbuild --distribution MacOSX/Distribution.xml --package-path . --resources MacOSX/resources "${imagedir}/OpenSC @PACKAGE_VERSION@.pkg"
+productbuild --distribution MacOSX/Distribution.xml --package-path . --resources MacOSX/resources "${imagedir}/OpenSC @PACKAGE_VERSION@_unsigned.pkg"
+productsign --timestamp --sign "${CODE_SIGN_IDENTITY_INSTALLER}" "${imagedir}/OpenSC @PACKAGE_VERSION@_unsigned.pkg" "${imagedir}/OpenSC @PACKAGE_VERSION@.pkg"
+rm "${imagedir}/OpenSC @PACKAGE_VERSION@_unsigned.pkg"
 
 # Build "Uninstaller"
 osacompile -o "${imagedir}/OpenSC Uninstaller.app" "MacOSX/OpenSC_Uninstaller.applescript"
+codesign --force --verify --options runtime  --verbose --sign "${CODE_SIGN_IDENTITY}" "${imagedir}/OpenSC Uninstaller.app"
+
 
 # Create .dmg
 rm -f OpenSC-@PACKAGE_VERSION@.dmg
@@ -203,3 +252,5 @@ do
 	fi
 done
 rm -rf ${imagedir}
+
+codesign -s "${CODE_SIGN_IDENTITY}" --timestamp OpenSC-@PACKAGE_VERSION@.dmg
