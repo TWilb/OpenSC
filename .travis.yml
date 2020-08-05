@@ -81,7 +81,7 @@ before_install:
         .github/add_signing_key.sh;
         export OTHER_CODE_SIGN_FLAGS=--timestamp CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO CODE_SIGN_STYLE=Manual;
         git clone https://github.com/TWilb/OpenSCToken.git;
-        git checkout macos-notarization
+        git checkout macos-notarization;
     fi
   - if [ "${DO_SIMULATION}" = "javacard" ]; then
         sudo apt-get install -y openjdk-8-jdk;
