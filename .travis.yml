@@ -25,8 +25,8 @@ matrix:
         - DO_PUSH_ARTIFACT=yes
     - env:
         - HOST=i686-w64-mingw32
-        - DO_PUSH_ARTIFACT=yes
-    - env: DO_COVERITY_SCAN=yes
+        - DO_PUSH_ARTIFACT=no
+    - env: DO_COVERITY_SCAN=no
     - compiler: gcc
       os: linux
       dist: bionic
