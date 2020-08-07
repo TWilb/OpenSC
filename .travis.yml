@@ -79,7 +79,7 @@ before_install:
         export PATH="/usr/local/opt/ccache/libexec:$PATH";
         openssl aes-256-cbc -K $encrypted_3b9f0b9d36d1_key -iv $encrypted_3b9f0b9d36d1_iv -in .github/secrets.tar.enc -out .github/secrets.tar -d;
         .github/add_signing_key.sh;
-        export OTHER_CODE_SIGN_FLAGS=--timestamp CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO CODE_SIGN_STYLE=Manual;
+        export OTHER_CODE_SIGN_FLAGS=--options=runtime --timestamp CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO CODE_SIGN_STYLE=Manual;
         git clone https://github.com/TWilb/OpenSCToken.git;
         git checkout macos-notarization;
     fi
