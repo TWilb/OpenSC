@@ -254,3 +254,94 @@ done
 rm -rf ${imagedir}
 
 codesign -s "${CODE_SIGN_IDENTITY}" --timestamp OpenSC-@PACKAGE_VERSION@.dmg
+
+
+PLIST_BUDDY='/usr/libexec/PlistBuddy'
+echo "Uploading for notarization..."
+
+
+xcrun altool --notarize-app --primary-bundle-id org.opensc-project.mac -u "${NOTARIZATION_ACCOUNT}" -p "${NOTARIZATION_ACCOUNT_PASSWORD}" --output-format xml --file OpenSC-@PACKAGE_VERSION@.dmg > notarize_result.plist
+
+notarize_exit=$?
+if [ "${notarize_exit}" != "0" ]
+then
+	echo "Notarization failed: ${notarize_exit}"
+	cat "notarize_result.plist"
+	exit 1
+fi
+
+request_uuid="$("${PLIST_BUDDY}" -c "Print notarization-upload:RequestUUID"  "notarize_result.plist")"
+echo "Notarization UUID: ${request_uuid} result: $("${PLIST_BUDDY}" -c "Print success-message"  "notarize_result.plist")"
+
+
+# -------- Check for notarization result every 30 sek
+
+for (( ; ; ))
+do
+	xcrun altool --notarization-info "${request_uuid}" 	-u "${NOTARIZATION_ACCOUNT}" -p "${NOTARIZATION_ACCOUNT_PASSWORD}" --output-format xml > "notarize_status.plist"
+
+	notarize_exit=$?
+	if [ "${notarize_exit}" != "0" ]
+	then
+		echo "Notarization failed: ${notarize_exit}"
+		cat "notarize_status.plist"
+		exit 1
+	fi
+	notarize_status="$("${PLIST_BUDDY}" -c "Print notarization-info:Status"  "notarize_status.plist")"
+	if [ "${notarize_status}" == "in progress" ]
+	then
+        echo "Waiting for notarization to complete"
+        sleep 30
+    else
+    	echo "Notarization status: ${notarize_status}"
+    	break
+	fi
+done
+
+
+notarization_log_url="$("${PLIST_BUDDY}" -c "Print notarization-info:LogFileURL"  "notarize_status.plist")"
+echo "Notarization log URL: ${notarization_log_url}"
+
+if [ "${notarize_status}" != "success" ]
+then
+	echo "Notarization failed."
+	if [ ! -z "${notarization_log_url}" ]
+	then
+		curl "${notarization_log_url}"
+	fi
+	exit 1
+fi
+
+
+# -------- Staple notarization result on to disk image
+
+echo "Stapling notarization result..."
+for (( ; ; ))
+do
+    xcrun stapler staple -q OpenSC-@PACKAGE_VERSION@.dmg
+    stapler_status=$?
+    if [ "${stapler_status}" = "65" ]
+    then
+        echo "Waiting for stapling to find record"
+        sleep 30
+    else
+        echo "Stapler status: ${stapler_status}"
+        break
+    fi
+done
+
+
+# -------- Validate the resulting disk image
+
+spctl --assess --type open --context context:primary-signature -v OpenSC-@PACKAGE_VERSION@.dmg
+disk_image_validation_result=$?
+
+if [ "${disk_image_validation_result}" != 0 ]
+then
+	echo "Failed to validate disk image: ${disk_image_validation_result}"
+	curl "${notarization_log_url}"
+	exit 1
+else
+	echo "Validated disk image: ${disk_image_validation_result}"
+fi
+
