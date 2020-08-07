@@ -204,7 +204,7 @@ do
   codesign --force --verify --options runtime  --verbose --sign "${CODE_SIGN_IDENTITY}" $f
 done
 
-FILESLIBDY=${BUILDPATH}/target/Library/OpenSC/lib/*.bundle
+FILESLIBDY=${BUILDPATH}/target/Library/OpenSC/lib/*.dylib
 for f in $FILESLIBDY
 do
   echo "Signing $f file..."
