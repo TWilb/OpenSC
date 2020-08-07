@@ -4,7 +4,7 @@ matrix:
   include:
     - compiler: clang
       os: osx
-      osx_image: xcode9.4
+      osx_image: xcode11.6
       env: DO_PUSH_ARTIFACT=yes
     - compiler: clang
       os: linux
@@ -25,8 +25,8 @@ matrix:
         - DO_PUSH_ARTIFACT=yes
     - env:
         - HOST=i686-w64-mingw32
-        - DO_PUSH_ARTIFACT=no
-    - env: DO_COVERITY_SCAN=no
+        - DO_PUSH_ARTIFACT=yes
+    - env: DO_COVERITY_SCAN=yes
     - compiler: gcc
       os: linux
       dist: bionic
