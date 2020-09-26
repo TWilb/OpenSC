@@ -25,6 +25,7 @@ P1="${CODE_SIGN_IDENTITY:+CODE_SIGN_IDENTITY=${CODE_SIGN_IDENTITY}}"
 P2="${OTHER_CODE_SIGN_FLAGS:+OTHER_CODE_SIGN_FLAGS=${OTHER_CODE_SIGN_FLAGS}}"
 P3="${CODE_SIGN_INJECT_BASE_ENTITLEMENTS:+CODE_SIGN_INJECT_BASE_ENTITLEMENTS=${CODE_SIGN_INJECT_BASE_ENTITLEMENTS}}"
 P4="${CODE_SIGN_STYLE:+CODE_SIGN_STYLE=${CODE_SIGN_STYLE}}"
+P5="${DEVELOPMENT_TEAM:+DEVELOPMENT_TEAM=${DEVELOPMENT_TEAM}}"
 
 
 
@@ -120,7 +121,7 @@ if (( $(xcodebuild -version | sed -En 's/Xcode[[:space:]]+([0-9]+)(\.[0-9]*)*/\1
 
 	# Build and copy OpenSC.tokend
 	if test -n "${CODE_SIGN_IDENTITY}"; then
-		xcodebuild -target OpenSC -configuration Deployment -project OpenSC.tokend/Tokend.xcodeproj install DSTROOT=${BUILDPATH}/target_tokend "$P1" $P2 "$P3" "$P4"
+		xcodebuild -target OpenSC -configuration Deployment -project OpenSC.tokend/Tokend.xcodeproj install DSTROOT=${BUILDPATH}/target_tokend "$P1" $P2 "$P3" "$P4" "$P5"
 	else
 		xcodebuild -target OpenSC -configuration Deployment -project OpenSC.tokend/Tokend.xcodeproj install DSTROOT=${BUILDPATH}/target_tokend
 	fi
@@ -174,7 +175,7 @@ if test -e OpenSCToken -a -n "${CODE_SIGN_IDENTITY}"; then
 	BP=${BUILDPATH}
 	. ./bootstrap
 	BUILDPATH=${BP}
-	xcodebuild -target OpenSCTokenApp -configuration Debug -project OpenSCTokenApp.xcodeproj install DSTROOT=${BUILDPATH}/target_token "$P1" "$P2" "$P3" "$P4"
+	xcodebuild -target OpenSCTokenApp -configuration Debug -project OpenSCTokenApp.xcodeproj install DSTROOT=${BUILDPATH}/target_token "$P1" "$P2" "$P3" "$P4" "$P5"
 	cd ..
 else
 	# if no OpenSCToken is checked out, then we create a dummy package
